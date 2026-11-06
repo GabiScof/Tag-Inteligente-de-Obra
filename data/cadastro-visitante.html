@@ -1,0 +1,378 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Cadastro de Visitante | Museu Interativo</title>
+
+    <!-- CSS principal -->
+    <link rel="stylesheet" href="./style.css">
+
+    <!-- Estilos específicos do cadastro -->
+    <style>
+
+        .cadastro-container {
+            max-width: 720px;
+            margin: 50px auto;
+        }
+
+        .cadastro-header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .cadastro-header h1 {
+            color: var(--primary, #284A3D);
+            margin-bottom: 12px;
+        }
+
+        .cadastro-header p {
+            color: var(--text-secondary, #68746C);
+        }
+
+        .cadastro-card {
+            background: #FFFFFF;
+            padding: 35px;
+            border: 1px solid #E3E6E0;
+            border-radius: 14px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        .secao-titulo {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 10px 0 20px;
+            color: #284A3D;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .form-group.full {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            margin: 0;
+        }
+
+        .form-group input {
+            width: 100%;
+        }
+
+        .secao-divisor {
+            border: none;
+            border-top: 1px solid #E3E6E0;
+            margin: 30px 0;
+        }
+
+        .rfid-info {
+            background: #F1F5F2;
+            border: 1px solid #DCE8DF;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #46584C;
+        }
+
+        .consentimento {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin: 25px 0;
+        }
+
+        .consentimento input {
+            width: 18px;
+            height: 18px;
+            margin-top: 4px;
+            flex-shrink: 0;
+        }
+
+        .consentimento label {
+            margin: 0;
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 1.6;
+        }
+
+        .btn-cadastrar {
+            width: 100%;
+            padding: 15px;
+            font-size: 15px;
+        }
+
+        .mensagem {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .mensagem.sucesso {
+            color: #237047;
+        }
+
+        .mensagem.erro {
+            color: #B42318;
+        }
+
+        @media (max-width: 600px) {
+
+            .cadastro-container {
+                margin: 25px auto;
+            }
+
+            .cadastro-card {
+                padding: 22px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <!-- ==================== CABEÇALHO ==================== -->
+
+    <header>
+
+        <strong>🏛 Museu Interativo</strong>
+
+        <nav>
+            <a href="./index.html">Explorar obras</a>
+            <a href="./cadastro-visitante.html">
+                Cadastro
+            </a>
+        </nav>
+
+    </header>
+
+
+    <!-- ==================== CONTEÚDO ==================== -->
+
+    <main class="cadastro-container">
+
+        <!-- Apresentação -->
+        <div class="cadastro-header">
+
+            <h1>Bem-vindo ao Museu</h1>
+
+            <p>
+                Cadastre-se para uma experiência
+                mais interativa e personalizada.
+            </p>
+
+        </div>
+
+
+        <!-- ==================== FORMULÁRIO ==================== -->
+
+        <section class="cadastro-card">
+
+            <form id="formVisitante">
+
+                <!-- Dados pessoais -->
+                <h2 class="secao-titulo">
+                    Dados do visitante
+                </h2>
+
+                <div class="form-grid">
+
+                    <!-- Nome -->
+                    <div class="form-group full">
+
+                        <label for="nome">
+                            Nome completo *
+                        </label>
+
+                        <input
+                            type="text"
+                            id="nome"
+                            name="nome"
+                            placeholder="Digite seu nome completo"
+                            maxlength="120"
+                            autocomplete="name"
+                            required
+                        >
+
+                    </div>
+
+                    <!-- E-mail -->
+                    <div class="form-group full">
+
+                        <label for="email">
+                            E-mail (opcional)
+                        </label>
+
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            placeholder="exemplo@email.com"
+                            maxlength="160"
+                            autocomplete="email"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- ==================== RFID ==================== -->
+
+                <hr class="secao-divisor">
+
+                <h2 class="secao-titulo">
+                    Identificação RFID
+                </h2>
+
+                <div class="rfid-info">
+
+                    A identificação RFID permitirá registrar
+                    as obras visitadas durante sua experiência
+                    no museu.
+
+                </div>
+
+                <div class="form-grid">
+
+                    <div class="form-group full">
+
+                        <label for="rfid">
+                            Código da tag RFID *
+                        </label>
+
+                        <input
+                            type="text"
+                            id="rfid"
+                            name="rfid"
+                            placeholder="Aproxime sua tag ou digite o código"
+                            maxlength="64"
+                            autocomplete="off"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- ==================== CONSENTIMENTO ==================== -->
+
+                <div class="consentimento">
+
+                    <input
+                        type="checkbox"
+                        id="consentimento"
+                        name="consentimento"
+                        required
+                    >
+
+                    <label for="consentimento">
+
+                        Concordo com o uso dos meus dados
+                        para identificação e registro das
+                        interações durante a visita,
+                        conforme as informações de
+                        privacidade disponibilizadas pelo museu.
+
+                    </label>
+
+                </div>
+
+
+                <!-- ==================== BOTÃO ==================== -->
+
+                <button
+                    type="submit"
+                    class="btn-cadastrar"
+                >
+                    Finalizar cadastro
+                </button>
+
+                <!-- Mensagem ao visitante -->
+                <p
+                    id="mensagem"
+                    class="mensagem"
+                    role="status"
+                    aria-live="polite"
+                ></p>
+
+            </form>
+
+        </section>
+
+    </main>
+
+
+    <!-- ==================== JAVASCRIPT ==================== -->
+
+    <script>
+
+        const formulario = document.getElementById("formVisitante");
+        const mensagem = document.getElementById("mensagem");
+
+        formulario.addEventListener("submit", function (event) {
+
+            event.preventDefault();
+
+            const nome = document.getElementById("nome").value.trim();
+            const email = document.getElementById("email").value.trim();
+            const rfid = document.getElementById("rfid").value.trim();
+
+            const consentimento = document.getElementById(
+                "consentimento"
+            ).checked;
+
+            mensagem.className = "mensagem";
+
+            // Verificar campos obrigatórios
+            if (!nome || !rfid || !consentimento) {
+
+                mensagem.textContent =
+                    "Preencha os campos obrigatórios e aceite o consentimento.";
+
+                mensagem.classList.add("erro");
+                return;
+            }
+
+            // Demonstração visual
+            // Futuramente, os dados serão enviados ao ESP32
+            // por meio de uma requisição HTTP POST.
+
+            console.log("Dados validados:", {
+                nome: nome,
+                emailInformado: Boolean(email),
+                rfidInformado: Boolean(rfid),
+                consentimento: consentimento
+            });
+
+            mensagem.textContent =
+                "Formulário validado! O armazenamento ainda não está conectado.";
+
+            mensagem.classList.add("sucesso");
+
+        });
+
+    </script>
+
+</body>
+</html>
