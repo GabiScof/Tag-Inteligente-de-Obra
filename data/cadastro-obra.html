@@ -1,199 +1,115 @@
 
-<!DOCTYPE html>
-<html lang="pt-BR">
+<form id="workForm" method="POST">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- ID da obra -->
+    <input
+        type="hidden"
+        id="workId"
+        name="workId"
+    >
 
-    <title>Museu Interativo | Administração</title>
+    <!-- Título -->
+    <label for="titulo">
+        Título da obra *
+    </label>
 
-    <!-- Estilos -->
-    <link rel="stylesheet" href="./style.css">
-</head>
+    <input
+        type="text"
+        id="titulo"
+        name="titulo"
+        placeholder="Ex.: A Noite Estrelada"
+        maxlength="120"
+        required
+    >
 
-<body>
+    <!-- Artista -->
+    <label for="artista">
+        Artista
+    </label>
 
-    <!-- ==================== CABEÇALHO ==================== -->
+    <input
+        type="text"
+        id="artista"
+        name="artista"
+        placeholder="Ex.: Vincent van Gogh"
+        maxlength="120"
+    >
 
-    <header>
+    <!-- Ano -->
+    <label for="ano">
+        Ano de criação
+    </label>
 
-        <strong>🏛 Museu Interativo</strong>
+    <input
+        type="text"
+        id="ano"
+        name="ano"
+        placeholder="Ex.: 1889"
+        maxlength="30"
+    >
 
-        <nav>
-            <a href="./index.html">Obras</a>
-            <a href="./admin.html">Administração</a>
-        </nav>
+    <!-- Imagem -->
+    <label for="imagem_url">
+        URL da imagem
+    </label>
 
-    </header>
+    <input
+        type="url"
+        id="imagem_url"
+        name="imagem_url"
+        placeholder="https://exemplo.com/imagem.jpg"
+        maxlength="500"
+    >
 
+    <!-- Descrição -->
+    <label for="descricao">
+        Descrição da obra
+    </label>
 
-    <!-- ==================== CONTEÚDO ==================== -->
+    <textarea
+        id="descricao"
+        name="descricao"
+        placeholder="Descreva a obra, sua história e seu contexto..."
+        maxlength="1500"
+        rows="5"
+    ></textarea>
 
-    <main>
+    <!-- Curiosidades -->
+    <label for="curiosidades">
+        Curiosidades
+    </label>
 
-        <h1>Gerenciar obras</h1>
+    <textarea
+        id="curiosidades"
+        name="curiosidades"
+        placeholder="Adicione curiosidades sobre a obra..."
+        maxlength="1500"
+        rows="4"
+    ></textarea>
 
-        <p class="muted">
-            Cadastre, edite e gerencie as obras do museu.
-        </p>
+    <!-- Token administrativo -->
+    <label for="token">
+        Token administrativo *
+    </label>
 
+    <input
+        type="password"
+        id="token"
+        name="token"
+        autocomplete="off"
+        required
+    >
 
-        <!-- ==================== AUTENTICAÇÃO ==================== -->
+    <!-- Botões -->
+    <button type="submit">
+        Salvar obra
+    </button>
 
-        <section class="panel">
+    <button
+        type="reset"
+        class="secondary"
+    >
+        Limpar formulário
+    </button>
 
-            <label for="token">
-                Token administrativo
-            </label>
-
-            <input
-                type="password"
-                id="token"
-                autocomplete="off"
-                placeholder="Token configurado no ESP32"
-            >
-
-            <p class="muted">
-                O token será utilizado para autorizar alterações
-                no cadastro das obras quando o sistema
-                estiver conectado ao ESP32.
-            </p>
-
-        </section>
-
-
-        <!-- ==================== CADASTRO DE OBRAS ==================== -->
-
-        <section class="panel">
-
-            <h2 id="formTitle">Cadastrar obra</h2>
-
-            <form id="workForm">
-
-                <!-- ID da obra -->
-                <input
-                    type="hidden"
-                    id="workId"
-                >
-
-
-                <!-- Título -->
-                <label for="titulo">
-                    Título da obra *
-                </label>
-
-                <input
-                    type="text"
-                    id="titulo"
-                    placeholder="Ex.: A Noite Estrelada"
-                    maxlength="120"
-                    required
-                >
-
-
-                <!-- Artista -->
-                <label for="artista">
-                    Artista
-                </label>
-
-                <input
-                    type="text"
-                    id="artista"
-                    placeholder="Ex.: Vincent van Gogh"
-                    maxlength="120"
-                >
-
-
-                <!-- Ano -->
-                <label for="ano">
-                    Ano de criação
-                </label>
-
-                <input
-                    type="text"
-                    id="ano"
-                    placeholder="Ex.: 1889"
-                    maxlength="30"
-                >
-
-
-                <!-- Imagem -->
-                <label for="imagem_url">
-                    URL da imagem
-                </label>
-
-                <input
-                    type="url"
-                    id="imagem_url"
-                    placeholder="https://exemplo.com/imagem.jpg"
-                    maxlength="500"
-                >
-
-
-                <!-- Descrição -->
-                <label for="descricao">
-                    Descrição da obra
-                </label>
-
-                <textarea
-                    id="descricao"
-                    placeholder="Descreva a obra, sua história e seu contexto..."
-                    maxlength="1500"
-                    rows="5"
-                ></textarea>
-
-
-                <!-- Curiosidades -->
-                <label for="curiosidades">
-                    Curiosidades
-                </label>
-
-                <textarea
-                    id="curiosidades"
-                    placeholder="Adicione curiosidades sobre a obra..."
-                    maxlength="1500"
-                    rows="4"
-                ></textarea>
-
-
-                <!-- Botões -->
-                <button type="submit">
-                    Salvar obra
-                </button>
-
-                <button
-                    type="reset"
-                    class="secondary"
-                >
-                    Limpar formulário
-                </button>
-
-            </form>
-
-
-            <!-- Mensagens -->
-            <p id="message" role="status"></p>
-
-        </section>
-
-
-        <!-- ==================== OBRAS CADASTRADAS ==================== -->
-
-        <section>
-
-            <h2>Obras cadastradas</h2>
-
-            <p class="muted">
-                As obras cadastradas serão exibidas nesta seção
-                quando o sistema de armazenamento estiver integrado.
-            </p>
-
-            <div id="adminList"></div>
-
-        </section>
-
-    </main>
-
-</body>
-</html>
+</form>

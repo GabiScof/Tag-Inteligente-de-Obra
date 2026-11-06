@@ -165,7 +165,7 @@
             window.location.search
         );
 
-        const idObra = params.get("id");
+        const posicao = params.get("posicao");
 
         // Preenche o template com os dados recebidos
         function exibirObra(obra) {
@@ -213,17 +213,18 @@
         }
 
         // Consulta os dados da obra no servidor
+        
         async function carregarObra() {
 
-            if (!idObra) {
+            if (!posicao) {
                 document.getElementById("titulo").textContent =
-                    "Obra não identificada";
+                    "Posição não identificada";
                 return;
             }
 
             try {
                 const resposta = await fetch(
-                    "/api/obras/" + encodeURIComponent(idObra)
+                    "/api/obras/posicao/" + encodeURIComponent(posicao)
                 );
 
                 if (!resposta.ok) {
@@ -232,9 +233,11 @@
 
                 const obra = await resposta.json();
 
+                // Preenche o HTML com os dados do banco
                 exibirObra(obra);
 
             } catch (erro) {
+
                 document.getElementById("titulo").textContent =
                     "Não foi possível carregar a obra";
 
@@ -243,6 +246,7 @@
         }
 
         carregarObra();
+
 
     </script>
 
