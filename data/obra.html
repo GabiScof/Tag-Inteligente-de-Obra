@@ -1,0 +1,250 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Obra | Museu Interativo</title>
+
+    <link rel="stylesheet" href="./style.css">
+
+    <style>
+        .obra-container {
+            max-width: 850px;
+            margin: 45px auto;
+        }
+
+        .obra-header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .obra-etiqueta {
+            color: #A17B4B;
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .obra-titulo {
+            color: #253C31;
+            font-size: clamp(30px, 5vw, 46px);
+            margin: 12px 0;
+        }
+
+        .obra-metadados {
+            color: #68746C;
+            font-size: 16px;
+        }
+
+        .obra-imagem {
+            width: 100%;
+            max-height: 550px;
+            object-fit: contain;
+            border-radius: 12px;
+            background: #F1F0EB;
+            margin: 20px auto 35px;
+        }
+
+        .obra-secao {
+            margin: 30px 0;
+        }
+
+        .obra-secao h2 {
+            font-size: 21px;
+            color: #284A3D;
+            margin-bottom: 12px;
+        }
+
+        .obra-secao p {
+            color: #536158;
+            line-height: 1.9;
+            white-space: pre-line;
+        }
+
+        .curiosidades {
+            background: #F1F5F2;
+            padding: 25px;
+            border-radius: 12px;
+        }
+
+        .obra-rodape {
+            margin-top: 60px;
+            text-align: center;
+            color: #8A938C;
+            font-size: 13px;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        @media (max-width: 600px) {
+            .obra-container {
+                margin: 25px auto;
+            }
+
+            .obra-imagem {
+                max-height: 380px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- CABEÇALHO -->
+    <header>
+        <strong>🏛 Museu Interativo</strong>
+    </header>
+
+    <main class="obra-container">
+
+        <!-- IDENTIFICAÇÃO -->
+        <section class="obra-header">
+
+            <p class="obra-etiqueta">
+                Conheça a obra
+            </p>
+
+            <h1 class="obra-titulo" id="titulo">
+                Carregando...
+            </h1>
+
+            <p class="obra-metadados">
+                <span id="artista"></span>
+                <span id="ano"></span>
+            </p>
+
+        </section>
+
+        <!-- IMAGEM -->
+        <img
+            id="imagem"
+            class="obra-imagem"
+            alt="Imagem da obra"
+            hidden
+        >
+
+        <!-- DESCRIÇÃO -->
+        <section class="obra-secao" id="secaoDescricao">
+
+            <h2>Sobre a obra</h2>
+
+            <p id="descricao"></p>
+
+        </section>
+
+        <!-- CURIOSIDADES -->
+        <section
+            class="obra-secao curiosidades"
+            id="secaoCuriosidades"
+        >
+
+            <h2>Você sabia?</h2>
+
+            <p id="curiosidades"></p>
+
+        </section>
+
+        <!-- RODAPÉ -->
+        <footer class="obra-rodape">
+            Museu Interativo · Arte e Tecnologia
+        </footer>
+
+    </main>
+
+    <!-- JAVASCRIPT -->
+    <script>
+
+        // Identifica qual obra deve ser exibida
+        const params = new URLSearchParams(
+            window.location.search
+        );
+
+        const idObra = params.get("id");
+
+        // Preenche o template com os dados recebidos
+        function exibirObra(obra) {
+
+            document.getElementById("titulo").textContent =
+                obra.titulo || "Obra sem título";
+
+            document.getElementById("artista").textContent =
+                obra.artista || "Artista desconhecido";
+
+            document.getElementById("ano").textContent =
+                obra.ano ? " · " + obra.ano : "";
+
+            document.getElementById("descricao").textContent =
+                obra.descricao || "";
+
+            document.getElementById("curiosidades").textContent =
+                obra.curiosidades || "";
+
+            // Imagem
+            const imagem = document.getElementById("imagem");
+
+            if (obra.imagem_url) {
+                imagem.src = obra.imagem_url;
+                imagem.alt = obra.titulo || "Imagem da obra";
+                imagem.hidden = false;
+
+                imagem.onerror = () => {
+                    imagem.hidden = true;
+                };
+            } else {
+                imagem.hidden = true;
+            }
+
+            // Oculta seções sem informações
+            document.getElementById("secaoDescricao").hidden =
+                !obra.descricao;
+
+            document.getElementById("secaoCuriosidades").hidden =
+                !obra.curiosidades;
+
+            // Atualiza o título da aba
+            document.title =
+                (obra.titulo || "Obra") + " | Museu Interativo";
+        }
+
+        // Consulta os dados da obra no servidor
+        async function carregarObra() {
+
+            if (!idObra) {
+                document.getElementById("titulo").textContent =
+                    "Obra não identificada";
+                return;
+            }
+
+            try {
+                const resposta = await fetch(
+                    "/api/obras/" + encodeURIComponent(idObra)
+                );
+
+                if (!resposta.ok) {
+                    throw new Error("Obra não encontrada");
+                }
+
+                const obra = await resposta.json();
+
+                exibirObra(obra);
+
+            } catch (erro) {
+                document.getElementById("titulo").textContent =
+                    "Não foi possível carregar a obra";
+
+                console.error(erro);
+            }
+        }
+
+        carregarObra();
+
+    </script>
+
+</body>
+</html>
