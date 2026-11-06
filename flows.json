@@ -1,0 +1,263 @@
+[
+    {
+        "id": "32ee7c85ac6935b1",
+        "type": "tab",
+        "label": "Fluxo 9",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "eb6596869f2cef43",
+        "type": "mqtt in",
+        "z": "32ee7c85ac6935b1",
+        "name": "",
+        "topic": "visitante",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "fa7923ade7c363e8",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 200,
+        "y": 220,
+        "wires": [
+            [
+                "35f49490da856bd2",
+                "f936b02aca5dd563"
+            ]
+        ]
+    },
+    {
+        "id": "35f49490da856bd2",
+        "type": "change",
+        "z": "32ee7c85ac6935b1",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "queryParameters",
+                "pt": "msg",
+                "to": "payload",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 460,
+        "y": 220,
+        "wires": [
+            [
+                "3560af617bd58b1d",
+                "b6d74a128e95e702"
+            ]
+        ]
+    },
+    {
+        "id": "3560af617bd58b1d",
+        "type": "postgresql",
+        "z": "32ee7c85ac6935b1",
+        "name": "",
+        "query": "INSERT INTO visitante (nome, email, rfid, consentimento) \nVALUES ($nome, $email, $rfid, $consentimento);",
+        "postgreSQLConfig": "1251550e75985b59",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 710,
+        "y": 220,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "f936b02aca5dd563",
+        "type": "debug",
+        "z": "32ee7c85ac6935b1",
+        "name": "debug 15",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 360,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "b6d74a128e95e702",
+        "type": "debug",
+        "z": "32ee7c85ac6935b1",
+        "name": "debug 16",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 600,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "21ca6311e4d364bb",
+        "type": "mqtt in",
+        "z": "32ee7c85ac6935b1",
+        "name": "",
+        "topic": "obra",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "fa7923ade7c363e8",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 190,
+        "y": 500,
+        "wires": [
+            [
+                "2835c56bc8a9c13d",
+                "457f35b4c524ab03"
+            ]
+        ]
+    },
+    {
+        "id": "2835c56bc8a9c13d",
+        "type": "change",
+        "z": "32ee7c85ac6935b1",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "queryParameters",
+                "pt": "msg",
+                "to": "payload",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 460,
+        "y": 500,
+        "wires": [
+            [
+                "a7e1a27e0c8c1553",
+                "d66f86875e23e56f"
+            ]
+        ]
+    },
+    {
+        "id": "a7e1a27e0c8c1553",
+        "type": "postgresql",
+        "z": "32ee7c85ac6935b1",
+        "name": "",
+        "query": "INSERT INTO obra (titulo, artista, ano, imagem_url, descricao, curiosidades) \nVALUES ($titulo, $artista, $ano, $imagem_url, $descricao, $curiosidades);",
+        "postgreSQLConfig": "1251550e75985b59",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 710,
+        "y": 500,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "457f35b4c524ab03",
+        "type": "debug",
+        "z": "32ee7c85ac6935b1",
+        "name": "debug 17",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 360,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "d66f86875e23e56f",
+        "type": "debug",
+        "z": "32ee7c85ac6935b1",
+        "name": "debug 18",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 600,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "fa7923ade7c363e8",
+        "type": "mqtt-broker",
+        "name": "MQTT",
+        "broker": "mqtt.janks.dev.br",
+        "port": "8883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": true,
+        "protocolVersion": "5",
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "1251550e75985b59",
+        "type": "postgreSQLConfig",
+        "name": "PostgreSQL",
+        "host": "postgresql.janks.dev.br",
+        "hostFieldType": "str",
+        "port": "5432",
+        "portFieldType": "num",
+        "database": "projeto_b",
+        "databaseFieldType": "str",
+        "ssl": "true",
+        "sslFieldType": "bool",
+        "applicationName": "",
+        "applicationNameType": "str",
+        "max": "10",
+        "maxFieldType": "num",
+        "idle": "1000",
+        "idleFieldType": "num",
+        "connectionTimeout": "10000",
+        "connectionTimeoutFieldType": "num",
+        "user": "iot",
+        "userFieldType": "str",
+        "password": "pepcon-garton",
+        "passwordFieldType": "str"
+    }
+]
