@@ -1,13 +1,11 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Obra | Museu Interativo</title>
+    <title>{{TITULO}} | Museu Interativo</title>
 
     <link rel="stylesheet" href="./style.css">
 
@@ -42,8 +40,8 @@
 
         .obra-imagem {
             width: 100%;
-            max-height: 550px;
-            object-fit: contain;
+            height: 400px;     /* Define uma altura fixa padrão para todas as fotos */
+            object-fit: cover; /* Corta os excessos mantendo o enquadramento sem distorcer */
             border-radius: 12px;
             background: #F1F0EB;
             margin: 20px auto 35px;
@@ -111,30 +109,33 @@
             </p>
 
             <h1 class="obra-titulo" id="titulo">
-                Carregando...
+                {{TITULO}}
             </h1>
 
             <p class="obra-metadados">
-                <span id="artista"></span>
-                <span id="ano"></span>
+                <span id="artista">{{ARTISTA}}</span>
+                <span id="ano">{{ANO}}</span>
             </p>
 
         </section>
 
         <!-- IMAGEM -->
-        <img
-            id="imagem"
-            class="obra-imagem"
-            alt="Imagem da obra"
-            hidden
-        >
+        <div id="containerImagem" class="obra-secao">
+            <img
+                id="imagem"
+                class="obra-imagem"
+                src="{{IMAGEM_URL}}"
+                alt="Imagem da obra"
+                onerror="this.style.display='none'"
+            >
+        </div>
 
         <!-- DESCRIÇÃO -->
         <section class="obra-secao" id="secaoDescricao">
 
             <h2>Sobre a obra</h2>
 
-            <p id="descricao"></p>
+            <p id="descricao">{{DESCRICAO}}</p>
 
         </section>
 
@@ -146,7 +147,7 @@
 
             <h2>Você sabia?</h2>
 
-            <p id="curiosidades"></p>
+            <p id="curiosidades">{{CURIOSIDADES}}</p>
 
         </section>
 
@@ -156,99 +157,6 @@
         </footer>
 
     </main>
-
-    <!-- JAVASCRIPT -->
-    <script>
-
-        // Identifica qual obra deve ser exibida
-        const params = new URLSearchParams(
-            window.location.search
-        );
-
-        const posicao = params.get("posicao");
-
-        // Preenche o template com os dados recebidos
-        function exibirObra(obra) {
-
-            document.getElementById("titulo").textContent =
-                obra.titulo || "Obra sem título";
-
-            document.getElementById("artista").textContent =
-                obra.artista || "Artista desconhecido";
-
-            document.getElementById("ano").textContent =
-                obra.ano ? " · " + obra.ano : "";
-
-            document.getElementById("descricao").textContent =
-                obra.descricao || "";
-
-            document.getElementById("curiosidades").textContent =
-                obra.curiosidades || "";
-
-            // Imagem
-            const imagem = document.getElementById("imagem");
-
-            if (obra.imagem_url) {
-                imagem.src = obra.imagem_url;
-                imagem.alt = obra.titulo || "Imagem da obra";
-                imagem.hidden = false;
-
-                imagem.onerror = () => {
-                    imagem.hidden = true;
-                };
-            } else {
-                imagem.hidden = true;
-            }
-
-            // Oculta seções sem informações
-            document.getElementById("secaoDescricao").hidden =
-                !obra.descricao;
-
-            document.getElementById("secaoCuriosidades").hidden =
-                !obra.curiosidades;
-
-            // Atualiza o título da aba
-            document.title =
-                (obra.titulo || "Obra") + " | Museu Interativo";
-        }
-
-        // Consulta os dados da obra no servidor
-        
-        async function carregarObra() {
-
-            if (!posicao) {
-                document.getElementById("titulo").textContent =
-                    "Posição não identificada";
-                return;
-            }
-
-            try {
-                const resposta = await fetch(
-                    "/api/obras/posicao/" + encodeURIComponent(posicao)
-                );
-
-                if (!resposta.ok) {
-                    throw new Error("Obra não encontrada");
-                }
-
-                const obra = await resposta.json();
-
-                // Preenche o HTML com os dados do banco
-                exibirObra(obra);
-
-            } catch (erro) {
-
-                document.getElementById("titulo").textContent =
-                    "Não foi possível carregar a obra";
-
-                console.error(erro);
-            }
-        }
-
-        carregarObra();
-
-
-    </script>
 
 </body>
 </html>
