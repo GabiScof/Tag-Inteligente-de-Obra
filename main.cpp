@@ -16,6 +16,7 @@
 
 // WebServer
 WebServer servidor(80);
+String resposta;
 
 // Banco de Dados
 SQLiteManager banco; 
@@ -231,91 +232,76 @@ void paginaAdmin() {
 
 
 void buscarObra() {
-
-    String token = servidor.pathArg(0);
-
-    if (token.isEmpty()) {
+    // Se você estiver guardando o JSON cru recebido pelo MQTT na variável global 'resposta':
+    if (resposta.isEmpty()) {
         servidor.send(
-            400,
-            "text/plain",
-            "Token inválido"
+            404,
+            "application/json",
+            "{\"erro\":\"Nenhuma obra carregada\"}"
         );
         return;
     }
 
-    for (char c : token) {
-        if (c < '0' || c > '9') {
-            servidor.send(
-                400,
-                "text/plain",
-                "Token inválido"
-            );
-            return;
-        }
-    }
-
     try {
-
-        JsonDocument resultado = banco.execute(
-            "SELECT titulo, artista, ano, imagem_url, "
-            "descricao, curiosidades "
-            "FROM cadastros_obras "
-            "WHERE token = ? "
-            "ORDER BY id DESC LIMIT 1",
-            token
-        );
-
-        if (!resultado.is<JsonArray>() ||
-             resultado.as<JsonArray>().size() == 0) {
-
-            servidor.send(
-                404,
-                "application/json",
-                "{\"erro\":\"Obra não encontrada\"}"
-            );
-
-            return;
-        }
-
-        String resposta;
-        serializeJson(resultado[0], resposta);
-
         servidor.send(
             200,
             "application/json",
             resposta
         );
-
     } catch (const std::exception &e) {
-
         Serial.println(e.what());
-
         servidor.send(
             500,
             "application/json",
-            "{\"erro\":\"Erro ao consultar banco\"}"
+            "{\"erro\":\"Erro ao enviar dados\"}"
         );
     }
 }
 
 
 void paginaObra() {
-
-    File arquivo = LittleFS.open(
-        "/obra.html", "r"
-    );
-
+    File arquivo = LittleFS.open("/obra.html", "r");
     if (!arquivo) {
-        servidor.send(
-            404,
-            "text/plain",
-            "Página não encontrada"
-        );
+        servidor.send(404, "text/plain", "Página não encontrada");
         return;
     }
 
-    servidor.streamFile(arquivo, "text/html");
+    // Lê o conteúdo do arquivo HTML para uma String
+    String html = arquivo.readString();
     arquivo.close();
+
+    // Se a resposta MQTT estiver vazia, define valores padrão
+    String titulo = "Carregando...";
+    String artista = "";
+    String ano = "";
+    String descricao = "Aguardando dados da obra...";
+    String curiosidades = "";
+    String imagem_url = "";
+
+    // Se houver dados salvos na variável 'resposta' (JSON), fazemos o parsing
+    if (!resposta.isEmpty()) {
+        JsonDocument doc;
+        DeserializationError erro = deserializeJson(doc, resposta);
+        if (!erro) {
+            titulo = doc["titulo"] | "Obra sem título";
+            artista = doc["artista"] | "Artista desconhecido";
+            ano = doc["ano"] | "";
+            descricao = doc["descricao"] | "";
+            curiosidades = doc["curiosidades"] | "";
+            imagem_url = doc["imagem_url"] | "";
+        }
+    }
+
+    // Substitui os marcadores no HTML pelos dados reais
+    html.replace("{{TITULO}}", titulo);
+    html.replace("{{ARTISTA}}", artista);
+    html.replace("{{ANO}}", ano.isEmpty() ? "" : " · " + ano);
+    html.replace("{{DESCRICAO}}", descricao);
+    html.replace("{{CURIOSIDADES}}", curiosidades);
+    html.replace("{{IMAGEM_URL}}", imagem_url);
+
+    // Envia o HTML pronto para o navegador
+    servidor.send(200, "text/html; charset=utf-8", html);
 }
 
 void paginaCSS() {
@@ -349,6 +335,9 @@ void reconectarWiFi() {
 
 void recebeuMensagem(String topico, String conteudo) { 
   Serial.println(topico + ": " + conteudo); 
+  if (topico == "obra/1"){
+    resposta = conteudo;
+  }
 }
 
 void reconectarMQTT() { 
@@ -361,7 +350,7 @@ void reconectarMQTT() {
     } 
     Serial.println(" conectado!"); 
     
-    //mqtt.subscribe("topico1");                // qos = 0  
+    mqtt.subscribe("obra/1");                // qos = 0  
     //mqtt.subscribe("topico2/+/parametro", 1); // qos = 1  
   } 
 }
