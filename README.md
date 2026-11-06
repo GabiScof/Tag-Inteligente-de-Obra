@@ -37,6 +37,16 @@ O sistema integra identificação de visitantes, sensores IoT e uma plataforma w
 
 <br>
 
+
+### Fluxograma do Sistema
+
+<div align="center">
+  <img src="imagens/fluxograma.png" alt="Fluxograma do sistema Tag Inteligente de Obra" width="100%">
+</div>
+
+<br>
+
+
 ### Tecnologias e Componentes
 
 | Tecnologia | Função |
