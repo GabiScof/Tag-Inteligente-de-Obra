@@ -106,18 +106,19 @@ void tratarDados() {
           "Dados inválidos"
       );
       return;
-  }
+  }   
 
-  // Adiciona no Banco de Dados
-  try { 
-    JsonDocument result = banco.execute( 
-      "INSERT INTO cadastros_visitantes (nome, email, rfid,consentimento)" 
-      "VALUES(?, ?, ?, ?)", nome, email, rfid, consentimento 
-    ); 
-  } 
-  catch (const std::exception &e) { 
-    Serial.println(e.what()); 
-  }
+  JsonDocument visitante;
+
+  visitante["nome"] = nome;
+  visitante["email"] = email;
+  visitante["rfid"] = rfid;
+  visitante["consentimento"] = consentimento;
+
+  String payload;
+  serializeJson(visitante, payload);
+
+  mqtt.publish("visitante", payload);
 
   servidor.sendHeader("Location", "/cadastro");
   servidor.send(303);
@@ -125,9 +126,7 @@ void tratarDados() {
 
 void paginaCadastro() {
 
-    File arquivo = LittleFS.open(
-        "/cadastro-visitante.html", "r"
-    );
+    File arquivo = LittleFS.open("/cadastro-visitante.html", "r");
 
     if (!arquivo) {
         servidor.send(404, "text/plain", "Página não encontrada");
@@ -140,6 +139,7 @@ void paginaCadastro() {
 
 
 // Site de Cadastro de Obras
+
 
 void tratarDadosObra() {
 
@@ -179,26 +179,52 @@ void tratarDadosObra() {
   Serial.println("Imagem: " + imagem_url);
   Serial.println("Descrição: " + descricao);
   Serial.println("Curiosidades: " + curiosidades);
+  Serial.println("token: " + token);
 
   // Adiciona no Banco de Dados
-  try { 
-    JsonDocument result = banco.execute( 
-      "INSERT INTO cadastros_obras (titulo, artista, ano, imagem_url, descricao, curiosidades, token)" 
-      "VALUES(?, ?, ?, ?, ?, ?, ?)", titulo, artista, ano, imagem_url, descricao, curiosidades, token 
-    ); 
-    } 
-    catch (const std::exception &e) { 
-      Serial.println(e.what()); 
+  JsonDocument obra;
+
+  obra["titulo"] = titulo;
+  obra["artista"] = artista;
+  obra["ano"] = ano;
+  obra["imagem_url"] = imagem_url;
+  obra["descricao"] = descricao;
+  obra["curiosidades"] = curiosidades;
+  obra["token"] = token;
+
+  String payload;
+  serializeJson(obra, payload);
+
+  mqtt.publish("obra", payload);
+
+  // Envia MQTT para o ESP específico da obra
+  mqtt.publish("obra/"+token, payload); // Atenção: Adicionar no ESP para quando receber MQTT atualizar os dados
+
+  servidor.send(
+      200,
+      "text/plain; charset=utf-8",
+      "Dados da obra recebidos!"
+  );
+}
+
+
+void paginaAdmin() {
+
+    File arquivo = LittleFS.open(
+        "/cadastro-obra.html", "r"
+    );
+
+    if (!arquivo) {
+        servidor.send(
+            404,
+            "text/plain",
+            "Página não encontrada"
+        );
+        return;
     }
 
-    // Envia MQTT para o ESP específico da obra
-    mqtt.publish("cadastro_obra/"+token, texto); // Atenção: Adicionar no ESP para quando receber MQTT atualizar os dados
-
-    servidor.send(
-        200,
-        "text/plain; charset=utf-8",
-        "Dados da obra recebidos!"
-    );
+    servidor.streamFile(arquivo, "text/html");
+    arquivo.close();
 }
 
 // Site com a Obra
@@ -240,7 +266,7 @@ void buscarObra() {
         );
 
         if (!resultado.is<JsonArray>() ||
-            resultado.as<JsonArray>().isEmpty()) {
+             resultado.as<JsonArray>().size() == 0) {
 
             servidor.send(
                 404,
@@ -289,6 +315,18 @@ void paginaObra() {
     }
 
     servidor.streamFile(arquivo, "text/html");
+    arquivo.close();
+}
+
+void paginaCSS() {
+    File arquivo = LittleFS.open("/style.css", "r");
+
+    if (!arquivo) {
+        servidor.send(404, "text/plain", "CSS não encontrado");
+        return;
+    }
+
+    servidor.streamFile(arquivo, "text/css");
     arquivo.close();
 }
 
@@ -371,6 +409,9 @@ void setup() {
 
   // Servidor Web
 
+  //CSS
+  servidor.on("/style.css", HTTP_GET, paginaCSS);
+
   // Site de Cadastro de Visitantes
   servidor.on("/cadastro", HTTP_GET, paginaCadastro);
   servidor.on("/cadastro", HTTP_POST, tratarDados);
@@ -381,7 +422,7 @@ void setup() {
   servidor.on("/admin", HTTP_POST, tratarDadosObra);
   
   // Site com a Obra
-  servidor.on("/obra.html", HTTP_GET, paginaObra);
+  servidor.on("/obra", HTTP_GET, paginaObra);
   servidor.on(UriBraces("/api/obras/posicao/{}"),HTTP_GET,buscarObra);
  
   servidor.begin();
@@ -411,7 +452,7 @@ void loop() {
     try { 
       JsonDocument result = banco.execute(                    // Atenção: Criar banco de dados e ajustar se necessário
       "INSERT INTO saida_RFID (rfid) " 
-      "VALUES(?)", texto; 
+      "VALUES(?)", texto
       ); 
     } 
     catch (const std::exception &e) { 
