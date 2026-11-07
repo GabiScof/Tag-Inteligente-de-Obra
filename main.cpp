@@ -8,15 +8,14 @@
 #include <SQLiteManager.h> 
 #include <LittleFS.h> 
 #include <ArduinoJson.h> 
-#include <WebServer.h>
 #include <uri/UriBraces.h>
+#include <Preferences.h>
+#include <NimBLEDevice.h>
+#include <NimBLEScan.h>
+#include <NimBLEBeacon.h>
 
 
 // Variáveis ----------------------------------------------------------------------------------------
-
-// WebServer
-WebServer servidor(80);
-String resposta;
 
 // Banco de Dados
 SQLiteManager banco; 
@@ -36,11 +35,130 @@ GFButton sensor(21); // Atenção: Redefinir posição mais tarde no projeto
 // LED
 int pinoLED = 2; // Atenção: Redefinir posição mais tarde no projeto
 
+// ESP Token
+String token = "1274";
+
+// Preferencias
+Preferences preferencias; 
+String titulo = "";
+String descricao = "";
+String url = "";
+
+// Controle do E-paper
+bool telaBranca = false;
+bool atualizarTela = false;
+
+// Controle do Beacon
+unsigned long ultimaDeteccao = 0;
+bool beaconProximo = false;
+
+// Tempo sem detectar Beacon para deixar a tela preta
+const unsigned long tempoEspera = 5000;
+
+// E-paper
+U8G2_FOR_ADAFRUIT_GFX fontes;
+GxEPD2_290_T94_V2 modeloTela(10, 14, 15, 16);
+GxEPD2_BW<GxEPD2_290_T94_V2, GxEPD2_290_T94_V2::HEIGHT> tela(modeloTela);
+BarcodeGFX codigoBarras(tela);
+QRCodeGFX qrcode(tela);
+
+// Beacon
+BLEScan* scannerBluetooth;
+String idDoMeuBeacon = "MEU ID"; // Atenção: Alterar com nosso ID
+
 
 // Funções ----------------------------------------------------------------------------------------
 
-// Sensor de Movimento
+// Desenho no E-paper
+void desenharObra() {
+    tela.fillScreen(GxEPD_WHITE);
 
+    // QR Code
+    qrcode.setScale(3);
+    qrcode.draw(url, 180, 0);
+
+    // Título
+    fontes.setFont(u8g2_font_helvR12_te);
+    fontes.setFontMode(1);
+    fontes.setCursor(5, 20);
+
+    if (titulo.length() > 20) {
+        int idx = titulo.lastIndexOf(" ", 20);
+        if (idx < 0) {
+            idx = 20;
+        }
+        fontes.print(titulo.substring(0, idx));
+        fontes.setCursor(5, 35);
+        fontes.print(titulo.substring(idx));
+
+    } else {
+        fontes.print(titulo);
+    }
+
+    // Descrição
+    fontes.setFont(u8g2_font_helvR10_te);
+    fontes.setFontMode(1);
+    int j = 0;
+    for (unsigned int i = 0; i < descricao.length(); i += 25) {
+        fontes.setCursor(6, 60 + j);
+        fontes.print(descricao.substring(i, i + 25));
+        j += 15;
+        // Evita ultrapassar a altura da tela
+        if (60 + j > 120) {
+            break;
+        }
+    }
+
+    tela.display(false);
+    telaBranca = true;
+
+    Serial.println("E-paper atualizado!");
+}
+
+void telaPreta() {
+
+    tela.fillScreen(GxEPD_BLACK);
+    tela.display(false);
+
+    telaBranca = false;
+
+    Serial.println("E-paper: tela preta");
+}
+
+// Beacon 
+float calcularDistancia(int potenciaSinal) {
+  if (potenciaSinal == 0) { return -1.0; } // erro
+    int referencia = -59; // dBm
+    float razao = potenciaSinal * 1.0 / referencia;
+    float distancia;
+    if (razao < 1.0) { distancia = pow(razao, 10); }
+    else {distancia = (0.89976) * pow(razao, 7.7095) + 0.111;}
+  return (float)(int)(distancia * 10 + 0.5) / 10.0;
+}
+
+class MeuRastreador: public NimBLEScanCallbacks {
+  void onResult(const NimBLEAdvertisedDevice* dispositivoBluetooth) override {
+    std::string dadosFabricante = dispositivoBluetooth->getManufacturerData();
+    if (dadosFabricante.length() != 25) { return; } // não é Beacon
+      NimBLEBeacon oBeacon = NimBLEBeacon();
+      oBeacon.setData((uint8_t*)dadosFabricante.data(), (uint8_t)dadosFabricante.length());
+      String idDispositivo = oBeacon.getProximityUUID().toString().c_str();
+      if (idDispositivo == idDoMeuBeacon) {
+        scannerBluetooth->stop();
+        int potencia = dispositivoBluetooth->getRSSI();
+        float distancia = calcularDistancia(potencia);
+        Serial.printf("Beacon a %.1f metros!\n", distancia);
+        // Se pessoa perto da obra, E-paper acende com dados da obra
+        if (distancia >= 0 && distancia < 3) {
+          ultimaDeteccao = millis();
+          beaconProximo = true;
+        }
+      }
+    }
+};
+
+
+// Sensor de Movimento
 void movimento (GFButton& sensor) { 
   Serial.println("Movimento detectado!"); 
   digitalWrite(pinoLED, LOW); 
@@ -83,240 +201,6 @@ String lerRFID() {
   return id; 
 }
 
-// Web Server
-
-// Site de Cadastro de Visitantes
-void tratarDados() {
-
-  String nome = servidor.arg("nome");
-  String email = servidor.arg("email");
-  String rfid = servidor.arg("rfid");
-  String consentimento = servidor.arg("consentimento");
-
-  Serial.println("Nome: " + nome);
-  Serial.println("Email: " + email);
-  Serial.println("RFID: " + rfid);
-  Serial.println("Consentimento: " + consentimento);
-
-  if (nome.isEmpty() || rfid.isEmpty() ||
-      consentimento != "true") {
-
-      servidor.send(
-          400,
-          "text/plain; charset=utf-8",
-          "Dados inválidos"
-      );
-      return;
-  }   
-
-  JsonDocument visitante;
-
-  visitante["nome"] = nome;
-  visitante["email"] = email;
-  visitante["rfid"] = rfid;
-  visitante["consentimento"] = consentimento;
-
-  String payload;
-  serializeJson(visitante, payload);
-
-  mqtt.publish("visitante", payload);
-
-  servidor.sendHeader("Location", "/cadastro");
-  servidor.send(303);
-}
-
-void paginaCadastro() {
-
-    File arquivo = LittleFS.open("/cadastro-visitante.html", "r");
-
-    if (!arquivo) {
-        servidor.send(404, "text/plain", "Página não encontrada");
-        return;
-    }
-
-    servidor.streamFile(arquivo, "text/html");
-    arquivo.close();
-}
-
-
-// Site de Cadastro de Obras
-
-
-void tratarDadosObra() {
-
-  String titulo = servidor.arg("titulo");
-  String artista = servidor.arg("artista");
-  String ano = servidor.arg("ano");
-  String imagem_url = servidor.arg("imagem_url");
-  String descricao = servidor.arg("descricao");
-  String curiosidades = servidor.arg("curiosidades");
-  String token = servidor.arg("token");
-  String workId = servidor.arg("workId");
-
-  // Validar autorização antes de alterar dados
-  // if (token != TOKEN_ADMIN) {
-  //     servidor.send(
-  //         403,
-  //         "text/plain; charset=utf-8",
-  //         "Acesso não autorizado"
-  //     );
-  //     return;
-  // }
-
-  if (titulo.isEmpty()) {
-      servidor.send(
-          400,
-          "text/plain; charset=utf-8",
-          "Título obrigatório"
-      );
-      return;
-  }
-
-  Serial.println("=== CADASTRO DE OBRA ===");
-
-  Serial.println("Título: " + titulo);
-  Serial.println("Artista: " + artista);
-  Serial.println("Ano: " + ano);
-  Serial.println("Imagem: " + imagem_url);
-  Serial.println("Descrição: " + descricao);
-  Serial.println("Curiosidades: " + curiosidades);
-  Serial.println("token: " + token);
-
-  // Adiciona no Banco de Dados
-  JsonDocument obra;
-
-  obra["titulo"] = titulo;
-  obra["artista"] = artista;
-  obra["ano"] = ano;
-  obra["imagem_url"] = imagem_url;
-  obra["descricao"] = descricao;
-  obra["curiosidades"] = curiosidades;
-  obra["token"] = token;
-
-  String payload;
-  serializeJson(obra, payload);
-
-  mqtt.publish("obra", payload);
-
-  // Envia MQTT para o ESP específico da obra
-  mqtt.publish("obra/"+token, payload); // Atenção: Adicionar no ESP para quando receber MQTT atualizar os dados
-
-  servidor.send(
-      200,
-      "text/plain; charset=utf-8",
-      "Dados da obra recebidos!"
-  );
-}
-
-
-void paginaAdmin() {
-
-    File arquivo = LittleFS.open(
-        "/cadastro-obra.html", "r"
-    );
-
-    if (!arquivo) {
-        servidor.send(
-            404,
-            "text/plain",
-            "Página não encontrada"
-        );
-        return;
-    }
-
-    servidor.streamFile(arquivo, "text/html");
-    arquivo.close();
-}
-
-// Site com a Obra
-
-
-void buscarObra() {
-    // Se você estiver guardando o JSON cru recebido pelo MQTT na variável global 'resposta':
-    if (resposta.isEmpty()) {
-        servidor.send(
-            404,
-            "application/json",
-            "{\"erro\":\"Nenhuma obra carregada\"}"
-        );
-        return;
-    }
-
-    try {
-        servidor.send(
-            200,
-            "application/json",
-            resposta
-        );
-    } catch (const std::exception &e) {
-        Serial.println(e.what());
-        servidor.send(
-            500,
-            "application/json",
-            "{\"erro\":\"Erro ao enviar dados\"}"
-        );
-    }
-}
-
-
-void paginaObra() {
-    File arquivo = LittleFS.open("/obra.html", "r");
-    if (!arquivo) {
-        servidor.send(404, "text/plain", "Página não encontrada");
-        return;
-    }
-
-    // Lê o conteúdo do arquivo HTML para uma String
-    String html = arquivo.readString();
-    arquivo.close();
-
-    // Se a resposta MQTT estiver vazia, define valores padrão
-    String titulo = "Carregando...";
-    String artista = "";
-    String ano = "";
-    String descricao = "Aguardando dados da obra...";
-    String curiosidades = "";
-    String imagem_url = "";
-
-    // Se houver dados salvos na variável 'resposta' (JSON), fazemos o parsing
-    if (!resposta.isEmpty()) {
-        JsonDocument doc;
-        DeserializationError erro = deserializeJson(doc, resposta);
-        if (!erro) {
-            titulo = doc["titulo"] | "Obra sem título";
-            artista = doc["artista"] | "Artista desconhecido";
-            ano = doc["ano"] | "";
-            descricao = doc["descricao"] | "";
-            curiosidades = doc["curiosidades"] | "";
-            imagem_url = doc["imagem_url"] | "";
-        }
-    }
-
-    // Substitui os marcadores no HTML pelos dados reais
-    html.replace("{{TITULO}}", titulo);
-    html.replace("{{ARTISTA}}", artista);
-    html.replace("{{ANO}}", ano.isEmpty() ? "" : " · " + ano);
-    html.replace("{{DESCRICAO}}", descricao);
-    html.replace("{{CURIOSIDADES}}", curiosidades);
-    html.replace("{{IMAGEM_URL}}", imagem_url);
-
-    // Envia o HTML pronto para o navegador
-    servidor.send(200, "text/html; charset=utf-8", html);
-}
-
-void paginaCSS() {
-    File arquivo = LittleFS.open("/style.css", "r");
-
-    if (!arquivo) {
-        servidor.send(404, "text/plain", "CSS não encontrado");
-        return;
-    }
-
-    servidor.streamFile(arquivo, "text/css");
-    arquivo.close();
-}
-
-
 
 // WiFi e MQTT
 
@@ -335,8 +219,20 @@ void reconectarWiFi() {
 
 void recebeuMensagem(String topico, String conteudo) { 
   Serial.println(topico + ": " + conteudo); 
-  if (topico == "obra/1"){
-    resposta = conteudo;
+  if (topico == "obra/"+token){
+    JsonDocument dados_obras;
+    deserializeJson(dados_obras,conteudo);
+
+    // Armazena os dados recebidos da obra em preferencias
+    preferencias.putString("titulo", String(dados_obras["titulo"]));
+    preferencias.putString("descricao", String(dados_obras["descricao"]));
+    preferencias.putString("url", String(dados_obras["url"]));
+
+    titulo = preferencias.getString("titulo", "");
+    descricao = preferencias.getString("descricao", "");
+    url = preferencias.getString("url", "");
+
+    atualizarTela = true;
   }
 }
 
@@ -350,8 +246,7 @@ void reconectarMQTT() {
     } 
     Serial.println(" conectado!"); 
     
-    mqtt.subscribe("obra/1");                // qos = 0  
-    //mqtt.subscribe("topico2/+/parametro", 1); // qos = 1  
+    mqtt.subscribe("obra/"+token, 1);
   } 
 }
 
@@ -361,6 +256,29 @@ void reconectarMQTT() {
 void setup() { 
   Serial.begin(115200); 
   delay(500); 
+
+  // E-paper
+  tela.init();
+  tela.setRotation(3);
+  fontes.begin(tela);
+  fontes.setForegroundColor(GxEPD_BLACK);
+  tela.fillScreen(GxEPD_BLACK);
+  tela.display(false);
+  telaBranca = false;
+
+  // Preferences
+  preferencias.begin("museu");
+
+  // Carregar os dados salvos
+  titulo = preferencias.getString("titulo", "");
+  descricao = preferencias.getString("descricao", "");
+  url = preferencias.getString("url", "");
+  
+
+  // Beacon
+  NimBLEDevice::init("");
+  scannerBluetooth = NimBLEDevice::getScan();
+  scannerBluetooth->setScanCallbacks(new MeuRastreador());
 
   // Sensor Movimento
   sensor.setPressHandler(inercia); 
@@ -395,34 +313,15 @@ void setup() {
     Serial.println(e.what()); 
     while (true); 
   }
-
-  // Servidor Web
-
-  //CSS
-  servidor.on("/style.css", HTTP_GET, paginaCSS);
-
-  // Site de Cadastro de Visitantes
-  servidor.on("/cadastro", HTTP_GET, paginaCadastro);
-  servidor.on("/cadastro", HTTP_POST, tratarDados);
-
-
-  // Site de Cadastro de Obras
-  servidor.on("/admin", HTTP_GET, paginaAdmin);
-  servidor.on("/admin", HTTP_POST, tratarDadosObra);
-  
-  // Site com a Obra
-  servidor.on("/obra", HTTP_GET, paginaObra);
-  servidor.on(UriBraces("/api/obras/posicao/{}"),HTTP_GET,buscarObra);
- 
-  servidor.begin();
-
 } 
 
 
 // loop ----------------------------------------------------------------------------------------
 
 void loop() { 
-  
+  // Beacon
+  scannerBluetooth->getResults(500, false);
+
   // Sensor Movimento
   sensor.process(); 
 
@@ -437,24 +336,34 @@ void loop() {
     rfid.PICC_HaltA(); 
     rfid.PCD_StopCrypto1(); 
 
-    // MQTT e Banco de Dados
-    try { 
-      JsonDocument result = banco.execute(                    // Atenção: Criar banco de dados e ajustar se necessário
-      "INSERT INTO saida_RFID (rfid) " 
-      "VALUES(?)", texto
-      ); 
-    } 
-    catch (const std::exception &e) { 
-      Serial.println(e.what()); 
-    }
-    
+    // MQTT
     mqtt.publish("saida/RFID", texto);
+  }
+
+  // Se passaram 5 segundos sem detectar o Beacon próximo
+  if (beaconProximo &&
+      millis() - ultimaDeteccao >= tempoEspera) {
+      beaconProximo = false;
+      Serial.println("Visitante se afastou!");
+  }
+
+  // Se o visitante estiver próximo
+  if (beaconProximo) {
+    // Desenha apenas se necessário
+    if (!telaBranca || atualizarTela) {
+        desenharObra();
+        atualizarTela = false;
+    }
   } 
-  
+  else {
+    // Se não houver visitante, deixa a tela preta
+    if (telaBranca) {
+        telaPreta();
+    }
+  }
+
   // WiFi e MQTT
   reconectarWiFi(); 
   reconectarMQTT(); 
   mqtt.loop(); 
-
-  servidor.handleClient();
 }

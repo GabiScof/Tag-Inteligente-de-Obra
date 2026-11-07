@@ -329,7 +329,6 @@ def excluir_obra(obra_id):
 
 @app.route("/obra/<string:token>")
 def visualizar_obra(token):
-
     obra = (Obra.query.filter_by(token=token).order_by(Obra.created_at.desc().nullslast(),Obra.id.desc()).first())
 
     if obra is None:
