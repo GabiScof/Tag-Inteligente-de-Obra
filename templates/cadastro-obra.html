@@ -278,12 +278,15 @@
 </div>
 
 <script>
+
 function abrirObras() {
     document.getElementById("modalObras").style.display = "flex";
+    sessionStorage.setItem("modalObrasAberto", "true");
 }
 
 function fecharObras() {
     document.getElementById("modalObras").style.display = "none";
+    sessionStorage.removeItem("modalObrasAberto");
     cancelarEdicaoObra();
 }
 
@@ -309,6 +312,13 @@ function editarObra(botao) {
 function cancelarEdicaoObra() {
     document.getElementById("painelEdicaoObra").style.display = "none";
 }
+
+document.addEventListener("DOMContentLoaded", function() {
+    if (sessionStorage.getItem("modalObrasAberto") === "true") {
+        abrirObras();
+    }
+});
+
 </script>
 
 </body>
