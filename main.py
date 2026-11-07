@@ -37,6 +37,7 @@ class Obra(db.Model):
     curiosidades = db.Column(db.Text, nullable=True)      
     imagem_url = db.Column(db.String(500), nullable=False)
     token = db.Column(db.String(50), nullable=True) 
+    created_at = db.Column(db.DateTime(timezone=False),server_default=db.func.now(),nullable=True)
 
     def __init__(self, titulo, artista, ano, descricao, curiosidades, imagem_url, token):
         self.titulo = titulo
@@ -248,7 +249,7 @@ def visualizar_obra(token):
         Obra.query
         .filter_by(token=token)
         .order_by(
-            Obra.data_cadastro.desc().nullslast(),
+            Obra.created_at.desc().nullslast(),
             Obra.id.desc()
         )
         .first()

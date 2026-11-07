@@ -1,0 +1,172 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{{ obra.titulo }} | Museu Interativo</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        .obra-container {
+            max-width: 850px;
+            margin: 45px auto;
+        }
+
+        .obra-header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .obra-etiqueta {
+            color: #A17B4B;
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .obra-titulo {
+            color: #253C31;
+            font-size: clamp(30px, 5vw, 46px);
+            margin: 12px 0;
+        }
+
+        .obra-metadados {
+            color: #68746C;
+            font-size: 16px;
+        }
+
+        .obra-imagem {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            border-radius: 12px;
+            background: #F1F0EB;
+            margin: 20px auto 35px;
+        }
+
+        .obra-secao {
+            margin: 30px 0;
+        }
+
+        .obra-secao h2 {
+            font-size: 21px;
+            color: #284A3D;
+            margin-bottom: 12px;
+        }
+
+        .obra-secao p {
+            color: #536158;
+            line-height: 1.9;
+            white-space: pre-line;
+        }
+
+        .curiosidades {
+            background: #F1F5F2;
+            padding: 25px;
+            border-radius: 12px;
+        }
+
+        .obra-rodape {
+            margin-top: 60px;
+            text-align: center;
+            color: #8A938C;
+            font-size: 13px;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        @media (max-width: 600px) {
+            .obra-container {
+                margin: 25px auto;
+            }
+
+            .obra-imagem {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- CABEÇALHO -->
+    <header>
+        <strong>🏛 Museu Interativo</strong>
+    </header>
+
+    <main class="obra-container">
+
+        <!-- IDENTIFICAÇÃO -->
+        <section class="obra-header">
+
+            <p class="obra-etiqueta">
+                Conheça a obra
+            </p>
+
+            <h1 class="obra-titulo" id="titulo">
+                {{ obra.titulo }}
+            </h1>
+
+            <p class="obra-metadados">
+                <span id="artista">{{ obra.artista }}</span>
+                {% if obra.artista and obra.ano %}
+                    ·
+                {% endif %}
+                <span id="ano">{{ obra.ano }}</span>
+            </p>
+
+        </section>
+
+        <!-- IMAGEM -->
+        {% if obra.imagem_url %}
+        <div id="containerImagem" class="obra-secao">
+            <img
+                id="imagem"
+                class="obra-imagem"
+                src="{{ obra.imagem_url }}"
+                alt="Imagem da obra {{ obra.titulo }}"
+                onerror="this.parentElement.style.display='none'"
+            >
+        </div>
+        {% endif %}
+
+        <!-- DESCRIÇÃO -->
+        {% if obra.descricao %}
+        <section class="obra-secao" id="secaoDescricao">
+
+            <h2>Sobre a obra</h2>
+
+            <p id="descricao">{{ obra.descricao }}</p>
+
+        </section>
+        {% endif %}
+
+        <!-- CURIOSIDADES -->
+        {% if obra.curiosidades %}
+        <section
+            class="obra-secao curiosidades"
+            id="secaoCuriosidades"
+        >
+
+            <h2>Você sabia?</h2>
+
+            <p id="curiosidades">{{ obra.curiosidades }}</p>
+
+        </section>
+        {% endif %}
+
+        <!-- RODAPÉ -->
+        <footer class="obra-rodape">
+            Museu Interativo · Arte e Tecnologia
+        </footer>
+
+    </main>
+
+</body>
+</html>
