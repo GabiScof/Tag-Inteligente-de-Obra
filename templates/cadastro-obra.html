@@ -115,7 +115,7 @@
     </label>
 
     <input
-        type="password"
+        type="text"
         id="token"
         name="token"
         autocomplete="off"
@@ -185,6 +185,7 @@
                                     data-imagem="{{ obra.imagem_url | e }}"
                                     data-descricao="{{ obra.descricao | e }}"
                                     data-curiosidades="{{ (obra.curiosidades or '') | e }}"
+                                    data-token="{{ (obra.token or '') | e }}"
                                     onclick="editarObra(this)">
                                     Editar
                                 </button>
@@ -258,6 +259,14 @@
                           name="curiosidades"
                           rows="4"></textarea>
 
+                <label for="editarToken">Token</label>
+                <input
+                    type="text"
+                    id="editarToken"
+                    name="token"
+                    maxlength="50"
+                    required>
+
                 <div class="botoes-edicao">
                     <button type="submit">
                         Salvar alterações
@@ -302,6 +311,7 @@ function editarObra(botao) {
     document.getElementById("editarImagem").value = dados.imagem;
     document.getElementById("editarDescricao").value = dados.descricao;
     document.getElementById("editarCuriosidades").value = dados.curiosidades;
+    document.getElementById("editarToken").value = dados.token;
 
     formulario.action = `/obras/${dados.id}/editar`;
 

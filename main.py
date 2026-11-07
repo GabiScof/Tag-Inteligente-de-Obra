@@ -33,17 +33,19 @@ class Obra(db.Model):
     titulo = db.Column(db.String(150), nullable=False)
     artista = db.Column(db.String(150), nullable=False)
     ano = db.Column(db.String(50), nullable=False)
-    descricao = db.Column(db.Text, nullable=False)         # Alterado para Text (sem limite curto)
-    curiosidades = db.Column(db.Text, nullable=True)      # Alterado para Text (e permitido vazio/null se necessário)
-    imagem_url = db.Column(db.String(500), nullable=False) # Aumentado o limite para URLs compridas
+    descricao = db.Column(db.Text, nullable=False)        
+    curiosidades = db.Column(db.Text, nullable=True)      
+    imagem_url = db.Column(db.String(500), nullable=False)
+    token = db.Column(db.String(50), nullable=True) 
 
-    def __init__(self, titulo, artista, ano, descricao, curiosidades, imagem_url):
+    def __init__(self, titulo, artista, ano, descricao, curiosidades, imagem_url, token):
         self.titulo = titulo
         self.artista = artista
         self.ano = ano
         self.descricao = descricao
         self.curiosidades = curiosidades
         self.imagem_url = imagem_url
+        self.token = token
         
 # Cria as tabelas no banco de dados automaticamente se não existirem
 with app.app_context():
@@ -102,8 +104,9 @@ def pagina_admin():  # Nome da função único
         descricao = request.form.get("descricao")
         curiosidades = request.form.get("curiosidades")
         imagem_url = request.form.get("imagem_url")
+        token = request.form.get("token")
 
-        if not titulo:
+        if not titulo or not token:
             return "Título obrigatório", 400
 
         try:
@@ -114,7 +117,8 @@ def pagina_admin():  # Nome da função único
                 ano=ano,
                 descricao=descricao,
                 curiosidades=curiosidades,
-                imagem_url=imagem_url
+                imagem_url=imagem_url,
+                token = token
             )
 
             db.session.add(nova_obra)
@@ -188,6 +192,7 @@ def editar_obra(obra_id):
     imagem_url = (request.form.get("imagem_url") or "").strip()
     descricao = (request.form.get("descricao") or "").strip()
     curiosidades = (request.form.get("curiosidades") or "").strip()
+    token = (request.form.get("token") or "").strip()
 
     if not titulo:
         return "Título obrigatório", 400
@@ -203,6 +208,7 @@ def editar_obra(obra_id):
         obra.imagem_url = imagem_url
         obra.descricao = descricao
         obra.curiosidades = curiosidades
+        obra.token = token
 
         db.session.commit()
 
@@ -233,6 +239,28 @@ def excluir_obra(obra_id):
 
     return redirect(url_for("pagina_admin"))
 
+
+
+@app.route("/obra/<string:token>")
+def visualizar_obra(token):
+
+    obra = (
+        Obra.query
+        .filter_by(token=token)
+        .order_by(
+            Obra.data_cadastro.desc().nullslast(),
+            Obra.id.desc()
+        )
+        .first()
+    )
+
+    if obra is None:
+        abort(404, description="Nenhuma obra encontrada para este token.")
+
+    return render_template(
+        "obra.html",
+        obra=obra
+    )
 
 app.run(port=5000)
 
