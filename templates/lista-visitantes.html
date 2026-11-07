@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<main style="width: 100%; margin: 0;">
+
+    {% if visitantes %}
+
+    <div style="overflow-x: auto;">
+
+        <table style="width: 100%; border-collapse: collapse;">
+
+            <thead>
+                <tr>
+                    <th style="padding: 12px;">ID</th>
+                    <th style="padding: 12px;">Nome</th>
+                    <th style="padding: 12px;">E-mail</th>
+                    <th style="padding: 12px;">RFID</th>
+                    <th style="padding: 12px;">Consentimento</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for visitante in visitantes %}
+
+                <tr style="border-top: 1px solid #E3E6E0;">
+
+                    <td style="padding: 12px;">
+                        {{ visitante.id }}
+                    </td>
+
+                    <td style="padding: 12px;">
+                        {{ visitante.nome }}
+                    </td>
+
+                    <td style="padding: 12px;">
+                        {{ visitante.email or 'Não informado' }}
+                    </td>
+
+                    <td style="padding: 12px;">
+                        {{ visitante.rfid }}
+                    </td>
+
+                    <td style="padding: 12px;">
+                        {{ 'Sim' if visitante.consentimento else 'Não' }}
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    {% else %}
+
+        <p class="muted">Nenhum visitante cadastrado.</p>
+
+    {% endif %}
+
+</main>
+
+</body>
+</html>

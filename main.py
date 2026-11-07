@@ -80,6 +80,16 @@ def pagina_visitante():  # Nome da função alterado para evitar conflito
 
     return render_template("cadastro-visitante.html")
 
+
+@app.route("/visitantes")
+def listar_visitantes():
+    visitantes = Visitante.query.order_by(Visitante.id.desc()).all()
+
+    return render_template(
+        "lista-visitantes.html",
+        visitantes=visitantes
+    )
+
 @app.route("/admin", methods=["GET", "POST"])
 def pagina_admin():  # Nome da função único
     if request.method == "POST":
