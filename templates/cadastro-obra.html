@@ -13,6 +13,12 @@
 <main>
 <div class="panel">
 
+<button type="button"
+        class="btn-visitantes"
+        onclick="abrirObras()">
+    Ver obras cadastradas
+</button>
+
 <h1>Cadastrar Obra</h1>
 
 <form id="workForm" method="POST">
@@ -131,6 +137,179 @@
 </form>
 </div>
 </main>
+
+<div id="modalObras" class="modal">
+    <div class="modal-content">
+
+        <span class="fechar"
+              onclick="fecharObras()">
+            &times;
+        </span>
+
+        <h2>Obras cadastradas</h2>
+
+        {% if obras %}
+
+        <div style="overflow-x: auto;">
+
+            <table class="obras-tabela">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Título</th>
+                        <th>Artista</th>
+                        <th>Ano</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for obra in obras %}
+
+                    <tr>
+                        <td>{{ obra.id }}</td>
+                        <td>{{ obra.titulo }}</td>
+                        <td>{{ obra.artista }}</td>
+                        <td>{{ obra.ano }}</td>
+
+                        <td>
+                            <div class="acoes-visitante">
+
+                                <button
+                                    type="button"
+                                    class="btn-editar"
+                                    data-id="{{ obra.id }}"
+                                    data-titulo="{{ obra.titulo | e }}"
+                                    data-artista="{{ obra.artista | e }}"
+                                    data-ano="{{ obra.ano | e }}"
+                                    data-imagem="{{ obra.imagem_url | e }}"
+                                    data-descricao="{{ obra.descricao | e }}"
+                                    data-curiosidades="{{ (obra.curiosidades or '') | e }}"
+                                    onclick="editarObra(this)">
+                                    Editar
+                                </button>
+
+                                <form method="POST"
+                                      action="{{ url_for('excluir_obra', obra_id=obra.id) }}"
+                                      onsubmit="return confirm('Deseja realmente excluir esta obra?');">
+
+                                    <button type="submit"
+                                            class="btn-excluir">
+                                        Excluir
+                                    </button>
+                                </form>
+
+                            </div>
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+
+        {% else %}
+
+        <p class="muted">Nenhuma obra cadastrada.</p>
+
+        {% endif %}
+
+        <div id="painelEdicaoObra"
+             class="painel-edicao"
+             style="display: none;">
+
+            <h2>Editar obra</h2>
+
+            <form id="formEdicaoObra" method="POST">
+
+                <label for="editarTitulo">Título</label>
+                <input type="text"
+                       id="editarTitulo"
+                       name="titulo"
+                       maxlength="150"
+                       required>
+
+                <label for="editarArtista">Artista</label>
+                <input type="text"
+                       id="editarArtista"
+                       name="artista"
+                       maxlength="150">
+
+                <label for="editarAno">Ano</label>
+                <input type="text"
+                       id="editarAno"
+                       name="ano"
+                       maxlength="50">
+
+                <label for="editarImagem">URL da imagem</label>
+                <input type="url"
+                       id="editarImagem"
+                       name="imagem_url"
+                       maxlength="500">
+
+                <label for="editarDescricao">Descrição</label>
+                <textarea id="editarDescricao"
+                          name="descricao"
+                          rows="5"></textarea>
+
+                <label for="editarCuriosidades">Curiosidades</label>
+                <textarea id="editarCuriosidades"
+                          name="curiosidades"
+                          rows="4"></textarea>
+
+                <div class="botoes-edicao">
+                    <button type="submit">
+                        Salvar alterações
+                    </button>
+
+                    <button type="button"
+                            class="secondary"
+                            onclick="cancelarEdicaoObra()">
+                        Cancelar
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+</div>
+
+<script>
+function abrirObras() {
+    document.getElementById("modalObras").style.display = "flex";
+}
+
+function fecharObras() {
+    document.getElementById("modalObras").style.display = "none";
+    cancelarEdicaoObra();
+}
+
+function editarObra(botao) {
+    const painel = document.getElementById("painelEdicaoObra");
+    const formulario = document.getElementById("formEdicaoObra");
+
+    const dados = botao.dataset;
+
+    document.getElementById("editarTitulo").value = dados.titulo;
+    document.getElementById("editarArtista").value = dados.artista;
+    document.getElementById("editarAno").value = dados.ano;
+    document.getElementById("editarImagem").value = dados.imagem;
+    document.getElementById("editarDescricao").value = dados.descricao;
+    document.getElementById("editarCuriosidades").value = dados.curiosidades;
+
+    formulario.action = `/obras/${dados.id}/editar`;
+
+    painel.style.display = "block";
+    painel.scrollIntoView({ behavior: "smooth" });
+}
+
+function cancelarEdicaoObra() {
+    document.getElementById("painelEdicaoObra").style.display = "none";
+}
+</script>
 
 </body>
 </html>

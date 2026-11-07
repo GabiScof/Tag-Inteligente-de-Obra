@@ -128,7 +128,14 @@ def pagina_admin():  # Nome da função único
 
         return redirect("/admin")
 
-    return render_template("cadastro-obra.html")
+    obras = Obra.query.order_by(Obra.id.desc()).all()
+
+    print(f"Quantidade de obras encontradas: {len(obras)}")
+
+    return render_template(
+        "cadastro-obra.html",
+        obras=obras
+    )
 
 
 @app.route("/visitantes/<int:visitante_id>/editar", methods=["POST"])
@@ -169,4 +176,63 @@ def excluir_visitante(visitante_id):
         return "Erro ao excluir visitante do banco de dados.", 500
     return redirect(url_for("listar_visitantes"))
 
+
+
+@app.route("/obras/<int:obra_id>/editar", methods=["POST"])
+def editar_obra(obra_id):
+    obra = db.get_or_404(Obra, obra_id)
+
+    titulo = (request.form.get("titulo") or "").strip()
+    artista = (request.form.get("artista") or "").strip()
+    ano = (request.form.get("ano") or "").strip()
+    imagem_url = (request.form.get("imagem_url") or "").strip()
+    descricao = (request.form.get("descricao") or "").strip()
+    curiosidades = (request.form.get("curiosidades") or "").strip()
+
+    if not titulo:
+        return "Título obrigatório", 400
+
+    if (len(titulo) > 150 or len(artista) > 150
+            or len(ano) > 50 or len(imagem_url) > 500):
+        return "Um dos campos ultrapassou o limite permitido.", 400
+
+    try:
+        obra.titulo = titulo
+        obra.artista = artista
+        obra.ano = ano
+        obra.imagem_url = imagem_url
+        obra.descricao = descricao
+        obra.curiosidades = curiosidades
+
+        db.session.commit()
+
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("Erro ao editar obra")
+        return "Erro ao atualizar obra no banco de dados.", 500
+
+    return redirect(url_for("pagina_admin"))
+
+
+@app.route("/obras/<int:obra_id>/excluir", methods=["POST"])
+def excluir_obra(obra_id):
+    obra = db.get_or_404(Obra, obra_id)
+
+    try:
+        db.session.delete(obra)
+        db.session.commit()
+
+    except IntegrityError:
+        db.session.rollback()
+        return "Não foi possível excluir: existem registros vinculados à obra.", 409
+
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("Erro ao excluir obra")
+        return "Erro ao excluir obra do banco de dados.", 500
+
+    return redirect(url_for("pagina_admin"))
+
+
 app.run(port=5000)
+
