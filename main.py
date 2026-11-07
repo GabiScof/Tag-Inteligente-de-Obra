@@ -3,13 +3,32 @@ from sqlalchemy.exc import IntegrityError
 import os
 import secrets
 from flask_sqlalchemy import SQLAlchemy
+import json
+import paho.mqtt.client as mqtt
 
+# Configuraçãoes ------------------------------------------------------------------------------------------------
+
+# Flask e Banco de Dados
 app = Flask(__name__)
-
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://iot:pepcon-garton@postgresql.janks.dev.br:5432/projeto_b'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 db = SQLAlchemy(app)
+
+# MQTT
+MQTT_BROKER = "mqtt.janks.dev.br"
+MQTT_PORT = 8883
+MQTT_USER = "aula"
+MQTT_PASSWORD = "zowmad-tavQez"
+
+mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2,client_id="flask-museu")
+mqtt_client.username_pw_set(MQTT_USER,MQTT_PASSWORD)
+
+mqtt_client.tls_set() # Conexão segura com TLS
+mqtt_client.connect(MQTT_BROKER,MQTT_PORT,keepalive=60)
+mqtt_client.loop_start()
+
+
+# Banco de Dados ------------------------------------------------------------------------------------------------
 
 class Visitante(db.Model):
     __tablename__ = 'visitante'
@@ -51,6 +70,58 @@ class Obra(db.Model):
 # Cria as tabelas no banco de dados automaticamente se não existirem
 with app.app_context():
     db.create_all()
+
+
+# Funções de MQTT ------------------------------------------------------------------------------------------------
+
+def publicar_atualizacao_obra(token):
+
+    # Busca a obra mais recente deste token
+    obra = (
+        Obra.query.filter_by(token=token).order_by(Obra.created_at.desc().nullslast(),Obra.id.desc()).first())
+
+    if obra is None:
+        dados = {
+            "token": token,
+            "status": "sem_obra"
+        }
+
+    else:
+        dados = {
+            "token": token,
+            "status": "atualizado",
+            "id": obra.id,
+            "titulo": obra.titulo,
+            "artista": obra.artista,
+            "ano": obra.ano,
+            "descricao": obra.descricao,
+            "curiosidades": obra.curiosidades,
+            "imagem_url": obra.imagem_url,
+            "url": url_for("visualizar_obra",token=token,_external=True)
+        }
+
+    topico = f"obra/{token}"
+
+    mensagem = json.dumps(dados,ensure_ascii=False)
+
+    resultado = mqtt_client.publish(
+        topic=topico,
+        payload=mensagem,
+        qos=1,
+        retain=True
+    )
+
+    if resultado.rc != mqtt.MQTT_ERR_SUCCESS:
+        app.logger.error(
+            "Falha ao enfileirar MQTT para token %s: %s",
+            token,
+            resultado.rc
+        )
+
+    return resultado.rc == mqtt.MQTT_ERR_SUCCESS
+
+
+# Routes ------------------------------------------------------------------------------------------------
 
 @app.route("/visitante", methods=["GET", "POST"])
 def pagina_visitante():  # Nome da função alterado para evitar conflito
@@ -124,6 +195,7 @@ def pagina_admin():  # Nome da função único
 
             db.session.add(nova_obra)
             db.session.commit()
+            publicar_atualizacao_obra(nova_obra.token) # Envia para o MQTT
             print("Obra cadastrada com sucesso!")
 
         except Exception as e:
@@ -203,6 +275,8 @@ def editar_obra(obra_id):
         return "Um dos campos ultrapassou o limite permitido.", 400
 
     try:
+        token_antigo = obra.token
+
         obra.titulo = titulo
         obra.artista = artista
         obra.ano = ano
@@ -211,6 +285,12 @@ def editar_obra(obra_id):
         obra.curiosidades = curiosidades
         obra.token = token
 
+        # Atualiza o token atual
+        publicar_atualizacao_obra(token) # Envia para o MQTT
+
+        # Se o token mudou, atualiza o antigo também
+        if token_antigo != token and token_antigo:
+            publicar_atualizacao_obra(token_antigo) # Envia para o MQTT
         db.session.commit()
 
     except Exception:
@@ -226,8 +306,13 @@ def excluir_obra(obra_id):
     obra = db.get_or_404(Obra, obra_id)
 
     try:
+        token_excluido = obra.token
+
         db.session.delete(obra)
         db.session.commit()
+
+        if token_excluido:
+            publicar_atualizacao_obra(token_excluido) # Envia para o MQTT
 
     except IntegrityError:
         db.session.rollback()
@@ -245,23 +330,12 @@ def excluir_obra(obra_id):
 @app.route("/obra/<string:token>")
 def visualizar_obra(token):
 
-    obra = (
-        Obra.query
-        .filter_by(token=token)
-        .order_by(
-            Obra.created_at.desc().nullslast(),
-            Obra.id.desc()
-        )
-        .first()
-    )
+    obra = (Obra.query.filter_by(token=token).order_by(Obra.created_at.desc().nullslast(),Obra.id.desc()).first())
 
     if obra is None:
         abort(404, description="Nenhuma obra encontrada para este token.")
 
-    return render_template(
-        "obra.html",
-        obra=obra
-    )
+    return render_template("obra.html",obra=obra)
 
 app.run(port=5000)
 
