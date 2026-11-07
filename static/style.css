@@ -567,3 +567,44 @@ button:disabled {
     text-align: center;
     cursor: pointer;
 }
+
+
+.acoes-visitante {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.acoes-visitante form {
+    margin: 0;
+}
+
+.btn-editar,
+.btn-excluir {
+    padding: 7px 12px;
+    min-height: 34px;
+    font-size: 13px;
+}
+
+.btn-excluir {
+    background-color: #A94442;
+    border-color: #A94442;
+}
+
+.btn-excluir:hover {
+    background-color: #873634;
+}
+
+.painel-edicao {
+    margin-top: 25px;
+    padding: 20px;
+    border: 1px solid #E3E6E0;
+    border-radius: 10px;
+    background: white;
+}
+
+.botoes-edicao {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}

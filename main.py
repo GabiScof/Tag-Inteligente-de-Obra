@@ -1,4 +1,7 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, url_for, session, abort
+from sqlalchemy.exc import IntegrityError
+import os
+import secrets
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
@@ -126,5 +129,44 @@ def pagina_admin():  # Nome da função único
         return redirect("/admin")
 
     return render_template("cadastro-obra.html")
+
+
+@app.route("/visitantes/<int:visitante_id>/editar", methods=["POST"])
+def editar_visitante(visitante_id):
+    visitante = db.get_or_404(Visitante, visitante_id)
+    nome = request.form.get("nome", "").strip()
+    email = request.form.get("email", "").strip()
+    rfid = request.form.get("rfid", "").strip()
+    if not nome or not rfid or len(nome) > 100 or len(email) > 120 or len(rfid) > 50:
+        return "Nome e RFID são obrigatórios e devem respeitar os limites de tamanho.", 400
+    visitante.nome = nome
+    visitante.email = email
+    visitante.rfid = rfid
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return "Este RFID já está cadastrado para outro visitante.", 409
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("Erro ao editar visitante")
+        return "Erro ao atualizar visitante no banco de dados.", 500
+    return redirect(url_for("listar_visitantes"))
+
+
+@app.route("/visitantes/<int:visitante_id>/excluir", methods=["POST"])
+def excluir_visitante(visitante_id):
+    visitante = db.get_or_404(Visitante, visitante_id)
+    try:
+        db.session.delete(visitante)
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return "Não foi possível excluir: existem registros vinculados a este visitante.", 409
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("Erro ao excluir visitante")
+        return "Erro ao excluir visitante do banco de dados.", 500
+    return redirect(url_for("listar_visitantes"))
 
 app.run(port=5000)

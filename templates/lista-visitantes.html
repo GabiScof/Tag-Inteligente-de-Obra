@@ -23,6 +23,7 @@
                     <th style="padding: 12px;">E-mail</th>
                     <th style="padding: 12px;">RFID</th>
                     <th style="padding: 12px;">Consentimento</th>
+                    <th style="padding: 12px;">Ações</th>
                 </tr>
             </thead>
 
@@ -52,6 +53,31 @@
                         {{ 'Sim' if visitante.consentimento else 'Não' }}
                     </td>
 
+                    <td style="padding: 12px;">
+
+    <div class="acoes-visitante">
+
+    <button type="button"
+            class="btn-editar"
+            data-id="{{ visitante.id }}"
+            data-nome="{{ visitante.nome | e }}"
+            data-email="{{ (visitante.email or '') | e }}"
+            data-rfid="{{ visitante.rfid | e }}"
+            onclick="editarVisitante(this)">
+        Editar
+    </button>
+        <form method="POST"
+              action="{{ url_for('excluir_visitante', visitante_id=visitante.id) }}"
+              onsubmit="return confirm('Deseja realmente excluir este visitante?');">
+
+            <button type="submit" class="btn-excluir">
+                Excluir
+            </button>
+
+        </form>
+
+    </div>
+</td>
                 </tr>
 
                 {% endfor %}
@@ -62,11 +88,63 @@
 
     </div>
 
+    <div id="painelEdicao" class="painel-edicao" style="display: none;">
+
+    <h2>Editar visitante</h2>
+
+    <form id="formEdicao" method="POST">
+
+        <label for="editarNome">Nome completo</label>
+        <input type="text" id="editarNome" name="nome" required>
+
+        <label for="editarEmail">E-mail</label>
+        <input type="email" id="editarEmail" name="email">
+
+        <label for="editarRFID">RFID</label>
+        <input type="text" id="editarRFID" name="rfid" required>
+
+        <div class="botoes-edicao">
+            <button type="submit">Salvar alterações</button>
+
+            <button type="button" class="secondary"
+                    onclick="cancelarEdicao()">
+                Cancelar
+            </button>
+        </div>
+
+        </form>
+
+    </div>
+
     {% else %}
 
         <p class="muted">Nenhum visitante cadastrado.</p>
 
     {% endif %}
+
+
+    <script>
+        
+function editarVisitante(botao) {
+    const painel = document.getElementById("painelEdicao");
+    const formulario = document.getElementById("formEdicao");
+
+    const id = botao.dataset.id;
+    const nome = botao.dataset.nome;
+    const email = botao.dataset.email;
+    const rfid = botao.dataset.rfid;
+
+    document.getElementById("editarNome").value = nome;
+    document.getElementById("editarEmail").value = email;
+    document.getElementById("editarRFID").value = rfid;
+
+    formulario.action = `/visitantes/${id}/editar`;
+
+    painel.style.display = "block";
+    painel.scrollIntoView({ behavior: "smooth" });
+}
+
+</script>
 
 </main>
 
